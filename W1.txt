@@ -1,0 +1,31 @@
+LINGI 2141 W1
+
+Bitrate - Bandwith - Throughput = synonyms
+
+	->
+101010101110101100
+
+010110101001001001
+	<-
+- Transmission error -> 2 devices speaking in the same time
+- Bit insertion { -> Clock between devices aren't 
+- Bit removal   { 	synchronized
+
+How to transmit a frame ?
+
+10111 for example
+
+ HEADER  PAYLOAD
+|   101| 10111   |
+----------------->
+  1 1 1 0 1 1 0 1
+ Payload   |
+This solution works on a perfect line
+
+Solutions with transmission errors
+ Parity bit (detect one error)
+ Bit stuffing ? (à chercher...)
+
+Using control frames (acknowlegement)
+
+
