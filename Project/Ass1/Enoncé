@@ -1,0 +1,117 @@
+Description
+
+For this first project you will have to implement in C a reliable transmission
+protocol on top of UDP, using IPv6. This protocol will be based on go-back-n (no
+selective repeat). You have to implement a sender and a receiver to reliably
+transmit a file of any length (we consider that the transmission is one-way
+and the receiver will only transmit acknowledgments). The packets have a
+fixed-length payload of 512 bytes. The particularity of this protocol is that
+the receiver can ask the sender to perform a sort of parity block every X packets,
+as a XOR of previous packets. For example, if the receiver asks the sender to
+send a XOR packet every 2 packets, an exchange can be something like this:
+
+S                        R
+------ data(1) ----->
+<----- ack(1) -------
+------ data(2) ----->
+<----- ack(2) -------
+------ XOR(3) ------>
+<----- ack(3) -------
+------ data(4) ----->
+<----- ack(4) -------
+------ data(5) ----->
+<----- ack(5) -------
+------ XOR(6) ------>
+<----- ack(6) -------
+
+In parentheses are the sequence numbers. The payload of the packet XOR(3)
+contains the payload of data(1) XOR payload of data(2). The payload of the
+packet XOR(6) contains the payload of data(4) XOR payload of data(5). If
+the receiver gets a XOR packet which does not match the previous packets it
+received, the sender must be able to retransmit all concerned packets.
+Format
+
+ 0 2 3   7 8     15 16    23 24    31
++---+-----+--------+--------+--------+
+|Ty | Win |  Seq   |     Length      |
+|pe | dow |  num   |                 |
++---+-----+--------+--------+--------+
+|                                    |
+|                                    |
++                                    +
+.         Payload (512 bytes)        .
+.                                    .
+.                                    .
++------------------------------------+
+
+             Header format
+Fields
+
+The type is encoded in 3 bits. It can take the following values:
+PTYPE_DATA (0x1): data packet
+PTYPE_ACK (0x2): acknowledgment
+PTYPE_SYN (0x3): synchronization packet used to request a given frequency for XOR packets
+PTYPE_XOR (0x4): XOR packet
+
+The window is encoded in 5 bits, leaving a maximum window size of 31. It states
+the receiving window of the sender of the segment in DATA, ACK and XOR packets.
+It has a special meaning when the packet type is PTYPE_SYN. In this case, this
+field is used to send the requested frequency of XOR packets. Any value below
+2 (i.e. 0 or 1) means that no XOR packet should be sent. If the receiver gets
+a XOR packet while it did not request them, the packet must be ACKed but its
+payload should be ignored. If the field is set to N, then the sender must send N
+data packets, then a XOR packet, then N data packets, then a XOR packet, etc.
+
+The sequence number is encoded in 8 bits, leaving a maximum seq num of 255.
+For DATA, SYN and XOR packets it states the seq num of the packet, and for ACK
+packets it states the next sequence number that the receiver expect to get (i.e.
+it acknowledges all packets whose sequence number is strictly lower that the
+stated sequence number).
+
+The length is encoded in 16 bits and specifies the useful length of the payload.
+
+The payload is 512 bytes max. If a packet contains less than 512 bytes
+(for example if a file is < 512 bytes or if it is the last segment of the
+transmission), then the payload MUST be padded with nul bytes (so that a XOR can
+always happen, as we need packets of same length to perform a XOR between them).
+
+If the specified length is higher than 512, the connection may be terminated
+in case the payload is truly larger than 512 bytes in order to avoid
+desynchronization. The receiver may also attempt to recover by dropping the
+network buffer. We leave the choice of the implementation up to you. In any
+case, the transfer is not required to complete when such a malformed packet
+occur.
+Connection establishment
+
+The handshake is performed when both peers send a SYN packet to inform the
+remote host of the requested XOR frequency. As they are the first packet sent by
+both peers, their sequence number is 0.
+
+S                   R
+----- syn(0) --->       SYN packet with win=0 (the sender will not receive data so it doesn't care about receiving XORs)
+<---- syn(0) ----       SYN packet with win=3 (the receiver wants XOR packet every 3 packets)
+<---- ack(0) ----       Receiver acknowledges the sender's SYN
+----- ack(0) --->       Sender acknowledges the receiver's SYN
+                              Handshake complete
+Data transfer
+
+The transfer is performed by an exchange of data and XOR packets (the latest
+only if the receiver requested them in the handshake) and acknowledgment.
+
+----- data(1) -->
+<---- ack(1) ----
+----- data(2) -->
+<---- ack(2) ----
+----- data(3) -->
+<---- ack(3) ----
+----- XOR(4) --->
+<---- ack(4) ----
+...
+
+Connection termination
+
+The connection is terminated when the receiver gets a packet with a length < 512.
+Notes
+
+- Some tricks might be necessary to enable the sender to resend a group of packets between two XORs.
+- Take some time to think about sequence number arithmetic
