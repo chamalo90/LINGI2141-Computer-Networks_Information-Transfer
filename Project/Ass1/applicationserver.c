@@ -17,7 +17,7 @@
 #define BUFFSIZE 544
 #define XORFREQ 0x03
 
-int read_sync(char buf*){
+int read_sync(char *buf){
 	if(buf[0]==(PTYPE_SYN << 5)){
 		return 1;
 	}else{
@@ -25,15 +25,15 @@ int read_sync(char buf*){
 	}
 }
 
-int sendSync(int socket, char buf*, struct sockaddr *dest_addr, int dest_len){
+int sendSync(int socket, char *buf, struct sockaddr *dest_addr, int dest_len){
 	buf[0] = (PTYPE_SYN >> 5) + XORFREQ;
 	memset(&(buf[1]), 0,BUFFSIZE - 1);
 	return sendto(socket,buf,BUFFSIZE,0,(struct sockaddr *)&dest_addr,dest_len);
 
 }
 
-int sendAck(int socket, char buf*, struct sockaddr *dest_addr, int dest_len, int seq_number){
-	buf[0] = (PTYPER_ACK >> 5) + seq_number;
+int sendAck(int socket, char *buf, struct sockaddr *dest_addr, int dest_len, int seq_number){
+	buf[0] = (PTYPE_ACK >> 5) + seq_number;
 	memset(&(buf[1]), 0,BUFFSIZE - 1);
 	return sendto(socket,buf,BUFFSIZE,0,(struct sockaddr *)&dest_addr,dest_len);
 
@@ -46,7 +46,7 @@ int main(int argc, char**argv){
 	struct sockaddr* peer_addr;
 	socklen_t peer_addr_len;
 	ssize_t nread;
-	char buf[BUF_SIZE];
+	char buf[BUFFSIZE];
 
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s port\n", argv[0]);
