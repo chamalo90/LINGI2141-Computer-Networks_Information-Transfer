@@ -91,7 +91,7 @@ int main(int argc, char**argv){
 
 	freeaddrinfo(result);           /* No longer needed */
 	/* CONNECTED TO CLIENT - SYNC PROCESS BEGINS */
-	if(recvfrom(sfd, buf, BUFFSIZE, (struct sockaddr*) &peer_addr, &peer_addr_len)== -1){
+	if(recvfrom(sfd, buf, BUFFSIZE, 0,(struct sockaddr*) &peer_addr, &peer_addr_len)== -1){
 		perror("Sync error on first receive");
 	}
 
