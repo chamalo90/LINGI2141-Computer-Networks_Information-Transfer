@@ -8,35 +8,27 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
+#include "appconst.h"
 
-#define PTYPE_DATA (0x1)
-#define PTYPE_ACK (0x2)
-#define PTYPE_SYN (0x3)
-#define PTYPE_XOR (0x4)
-
-#define BUFFSIZE 544
-#define XORFREQ 0x03
-
-int read_sync(char buf*){
+int readsync(int socket, char* buf, struct sockaddr *dest_addr, int dest_len){
+	if(recvfrom(socket, buf, BUFFSIZE, 0, (struct sockaddr*) &dest_addr, &dest_len)== -1){
+		return -1;
+	}
 	if(buf[0]==(PTYPE_SYN << 5)){
 		return 1;
-	}else{
+	}el	se{
 		return -1;
 	}
 }
 
-int sendSync(int socket, char buf*, struct sockaddr *dest_addr, int dest_len){
-	buf[0] = (PTYPE_SYN >> 5) + XORFREQ;
-	memset(&(buf[1]), 0,BUFFSIZE - 1);
-	return sendto(socket,buf,BUFFSIZE,0,(struct sockaddr *)&dest_addr,dest_len);
-
-}
-
-int sendAck(int socket, char buf*, struct sockaddr *dest_addr, int dest_len, int seq_number){
-	buf[0] = (PTYPER_ACK >> 5) + seq_number;
-	memset(&(buf[1]), 0,BUFFSIZE - 1);
-	return sendto(socket,buf,BUFFSIZE,0,(struct sockaddr *)&dest_addr,dest_len);
-
+int sendMsg(int socket, char* buf, struct sockaddr *dest_addr, int dest_len, int type, int seq_number, int window){
+	if(type == PTYPE_SYN){
+		buf[0] = (PTYPE_SYN >> 5) + XORFREQ;
+		memset(&(buf[1]), 0,BUFFSIZE - 1);
+		return sendto(socket,buf,BUFFSIZE,0,(struct sockaddr *)&dest_addr,dest_len);	
+	}else if(type == PTYPE_ACK){
+		buf[0] = (PTYPE_ACK >> 5);
+	}
 }
 
 int main(int argc, char**argv){
@@ -46,8 +38,7 @@ int main(int argc, char**argv){
 	struct sockaddr* peer_addr;
 	socklen_t peer_addr_len;
 	ssize_t nread;
-	char buf[BUF_SIZE];
-
+	char buf[BUFFSIZE];
 	if (argc != 2) {
 		fprintf(stderr, "Usage: %s port\n", argv[0]);
 		exit(EXIT_FAILURE);
@@ -56,14 +47,14 @@ int main(int argc, char**argv){
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_INET6;    /* Allow IPv6 */
 	hints.ai_socktype = SOCK_DGRAM; /* Datagram socket */
-	hints.ai_protocol = 0;          /* Any protocol, as we define our own */
+	hints.ai_protocol = 0;          /* Any protocol */
 	hints.ai_canonname = NULL;
 	hints.ai_addr = NULL;
 	hints.ai_next = NULL;
 
 	s = getaddrinfo(NULL, argv[1], &hints, &result);
 	if (s != 0) {
-		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+		perror("getaddrinfo");
 		exit(EXIT_FAILURE);
 	}
 
@@ -85,25 +76,31 @@ int main(int argc, char**argv){
 	}
 
 	if (rp == NULL) {               /* No address succeeded */
-		fprintf(stderr, "Could not bind\n");
+		perror("Could not bind");
 		exit(EXIT_FAILURE);
 	}
 
 	freeaddrinfo(result);           /* No longer needed */
+	printf("connected\n");
 	/* CONNECTED TO CLIENT - SYNC PROCESS BEGINS */
-	if(recvfrom(sfd, buf, BUFFSIZE, (struct sockaddr*) &peer_addr, &peer_addr_len)== -1){
-		perror("Sync error on first receive");
-	}
-
-	if(readsync(buf)==-1){
+	if(readsync(sfd, buf, peer_addr, peer_addr_len)==-1){
 		perror("Sync error on reading sync");
 		exit(EXIT_FAILURE);
 	}
 	
-	if(sendSync(sfd, buf, peer_addr, peer_addr_len) ==-1){
+	if(sendMsg(sfd, buf, peer_addr, peer_addr_len, PTYPE_SYN, 0, 0) ==-1){
 		perror("Sync error on first send");
 		exit(EXIT_FAILURE);
 	}
+	
+	if(sendMsg(sfd, buf, peer_addr, peer_addr_len,PTYPE_ACK, 0, 0)==-1){
+		perror("Sync error on first send");
+		exit(EXIT_FAILURE);
+	}
+	
+	printf("Sync on %x XOR freq", XORFREQ);
+	exit(EXIT_SUCCESS);	
+
 	
 
 		

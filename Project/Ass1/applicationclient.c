@@ -72,7 +72,7 @@ int main(int argc, char *argv[])
 	}
 	freeaddrinfo(result);/* No longer needed */
 	printf("connected\n");
-	if(sendMsg(sfd, buf, rp, peer_addr_len, PTYPE_SYN, 0, 0) ==-1){
+	if(sendMsg(sfd, buf, peer_addr, peer_addr_len, PTYPE_SYN, 0, 0) ==-1){
 		perror("Sync error on first send");
 		exit(EXIT_FAILURE);
 	}
