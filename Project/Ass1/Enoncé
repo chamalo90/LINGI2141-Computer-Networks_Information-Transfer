@@ -87,7 +87,7 @@ The handshake is performed when both peers send a SYN packet to inform the
 remote host of the requested XOR frequency. As they are the first packet sent by
 both peers, their sequence number is 0.
 
-S                   R
+S                   R 
 ----- syn(0) --->       SYN packet with win=0 (the sender will not receive data so it doesn't care about receiving XORs)
 <---- syn(0) ----       SYN packet with win=3 (the receiver wants XOR packet every 3 packets)
 <---- ack(0) ----       Receiver acknowledges the sender's SYN
