@@ -24,7 +24,11 @@ int xor_count = XORFREQ;
 int window_size;
 char buffer[PAYLOADSIZE*XORFREQ];
 char xor_buffer[PAYLOADSIZE];
+int msg_rvcd = 0;
+int last_length = PAYLOADSIZE;
 FILE *fp;
+
+
 
 int readsync(int socket){
 	
@@ -59,8 +63,7 @@ int sendMsg(int socket, int type, int seq_number, int window){
 
 int readType(char head){
 	char format_type = head & 0b11100000;
-	if(format_type == PTYPE_DATA<<5) return PTYPE_DATA;
-	if(format_type == PTYPE_XOR<<4) return PTYPE_XOR;
+	return (uint8_t) format_type >> 5;
 }
 
 int readWindow(char head){
@@ -70,14 +73,16 @@ int readWindow(char head){
 }
 
 int readSeqNumber(char s){
-	return s % 256;
+	return (uint8_t)s % 256;
 		
 }
 
 int readLength(char* buf){
-	int16_t len;
-	memcpy(&len, &buf[LENGTHSTARTPOS], LENGTHBYTESIZE);
-	printf("Length : %d\n", len);
+	//int16_t len = ((uint8_t) buf[LENGTHSTARTPOS]) << 8 | (uint8_t) buf[LENGTHSTARTPOS+1];
+	uint8_t left = (uint8_t) buf[LENGTHSTARTPOS];
+	uint8_t right = (uint8_t) buf[LENGTHSTARTPOS+1];
+	uint16_t len = left << 8 | right;
+	printf("Length : %x %x %u %u %d\n",buf[LENGTHSTARTPOS], buf[LENGTHSTARTPOS+1], left, right, len);
 	return len;
 }
 
@@ -103,16 +108,18 @@ void computeXor(char* buf){
 			int i;
 			for(i=0; i<PAYLOADSIZE; i++){
 				xor_buffer[i] = xor_buffer[i]^buf[4+i];
-				printf("%x  ", xor_buffer[i]);
 			}
-			printf("\n");
 		}else{
 			memcpy(&xor_buffer, &buf[4], PAYLOADSIZE);
 		}
 }
 
 void writeBufferToFile(){
-	if(fwrite(&buffer[XORFREQ-xor_count], readLength(&buffer[XORFREQ-xor_count]), 1,fp)==-1){
+	if(fwrite(&buffer, PAYLOADSIZE*(msg_rvcd-1), 1,fp)==-1){
+			perror("writing");
+			return;
+	}
+	if(fwrite(&buffer[PAYLOADSIZE*(msg_rvcd-1)], last_length, 1,fp)==-1){
 			perror("writing");
 			return;
 	}
@@ -121,10 +128,10 @@ void writeBufferToFile(){
 int checkXor(char *buf){
 		int i;
 		for(i = 0; i< PAYLOADSIZE; i++){
-			printf("%x %x\n",buf[4+i], xor_buffer[i]);
-			if(buf[4+i] != xor_buffer[i]){printf("c'est faux : %d\n",i); return 0;}
+			
+			if(buf[4+i] != xor_buffer[i]){ return 0;}
 		}
-		printf("c'est boooon\n");
+
 		/* Xor verified */ 
 		writeBufferToFile();
 		return 1;
@@ -133,7 +140,7 @@ int checkXor(char *buf){
 
 
 int receiveFile(int sock){
-	fp = fopen("testReceive.c","w");
+	fp = fopen("./melissa2.jpg","w");
 	
 	while(1){
 		char buf[BUFFSIZE];
@@ -149,41 +156,40 @@ int receiveFile(int sock){
 		if(type == PTYPE_DATA){
 			
 			int seq = readSeqNumber(buf[1]);
-			printf("Seq Number %d %d %d\n", seq, seq_number, xor_count);
 			if(seq == seq_number && xor_count !=0){
-				memcpy(&buffer[XORFREQ-xor_count], &buf[4], PAYLOADSIZE);
-				
+				memcpy(&buffer[(XORFREQ-xor_count)*PAYLOADSIZE], &buf[4], PAYLOADSIZE);
+				msg_rvcd++;
 				computeXor(buf);
 				xor_count--;
-				seq_number++;
-				printf("coucou %s\n",&buf[4]);
+				
+				seq_number = (seq_number+1)%256;
 				window_end = (window_end+ 1)%window_size;
 				sendMsg(sock, PTYPE_ACK, seq_number, window_end);
-				/*if(readLength(&buf[XORFREQ-xor_count]) != PAYLOADSIZE){
-						break;
-				}*/
+				last_length =readLength(buf);
+				if(last_length<512){
+						xor_count=0;
+				}
+				
 			}else{// else discard packet, send last ack again.
-				window_start = (window_start+1)%window_size;
-				window_end = (window_end+ 1)%window_size;
 				sendMsg(sock, PTYPE_ACK, seq_number, window_end);
 			}
 			
 		}else if(type == PTYPE_XOR){
 			int seq = readSeqNumber(buf[1]);
-			printf("receive xor %d %d  %d\n", seq, seq_number, xor_count);
 			if(seq == seq_number && xor_count == 0){
 					if(checkXor(buf)){
-							
 							xor_count = XORFREQ;
-							seq_number++;
+							seq_number= (seq_number+1)%256;
 							window_end = (window_end+ 1)%window_size;
 							sendMsg(sock, PTYPE_ACK, seq_number, window_end);
-							fclose(fp);
+							printf("Xor corr, nb: %d seq nb: %d\n",msg_rvcd, seq_number);
+							if(last_length<512){return 0;}
+							msg_rvcd=0;
 							
 					}else{
 							// Make choice if XOR is wrong
 							xor_count = XORFREQ;
-							seq_number++;
+							seq_number= (seq_number+1)%256;
 							/* SEND SPECIAL ACK.*/
 					}
 			}
@@ -231,34 +237,26 @@ int main(int argc, char**argv){
 		perror("Sync error on reading sync");
 		exit(EXIT_FAILURE);
 	}
-	printf("sync received\n");
 	
 	if(sendMsg(sock, PTYPE_SYN, 0, 0) ==-1){
 		perror("Sync error on first send");
 		exit(EXIT_FAILURE);
 	}
-	printf("sync sent\n");
 	
 	if(sendMsg(sock, PTYPE_ACK, 0, 0) ==-1){
 		perror("Sync error on first ack");
 		exit(EXIT_FAILURE);
 	}
-	printf("ack sent\n");
 	
 	if(readAck(sock)== -1){
 			perror("Acknoledgement reading");
 			exit(EXIT_FAILURE);
 	}
-	printf("ack received\n");
-	
-	
-	printf("Begins reception\n");
 	
 	if(receiveFile(sock)==-1){
 		perror("Error while receiving file");
 		exit(EXIT_FAILURE);	
 	}
-	
 	
 	freeaddrinfo(result);
 	close(sock);

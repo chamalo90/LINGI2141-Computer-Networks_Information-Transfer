@@ -13,7 +13,11 @@
 #define XORFREQ 2
 #define PAYLOADSIZE 512
 #define MAXWINDOWSIZE 32
-#define LENGTHBYTESIZE 2
-#define LENGTHSTARTPOS 3
+#define LENGTHSTARTPOS 2
+
+struct pollData1{
+	int seq_number;
+	
+};
 
 #endif 
