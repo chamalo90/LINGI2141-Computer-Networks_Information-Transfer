@@ -12,13 +12,13 @@
 #include <errno.h>
 #include <pthread.h>
 #include <semaphore.h>
+#include <poll.h>
 #include "appconst.h"
 
 struct sockaddr sin6;
 struct sockaddr_in6 sin6_serv;
 int sin6len = sizeof(struct sockaddr_in6);
 int seq_number = 0;
-int window_size = 4;
 int window_start = 1;
 int window_end = 1;
 int xor_count;
@@ -30,12 +30,33 @@ int sock;
 sem_t sem;
 int finished=0;
 int last_pack=0;
+pthread_t *last;
+int acknoledged = 0;
+char* file_path= NULL;
+FILE *fp=NULL;
 
-char* packet_path = "client.c";
+
+void* poll_timer(void* data){
+	int seq;
+	memcpy(&seq, data, sizeof(int));
+	struct pollfd fds;
+	fds.fd = sock;
+	fds.events = POLLIN;
+	if(poll(&fds,1,2000)==0){
+		printf("last %d %d", acknoledged, seq);
+		if(acknoledged<seq){
+		int calculdeben = seq - ((seq-1)%(xorfreq+1));
+		long calculdeju = calculdeben - (calculdeben/(xorfreq+1)) -1;
+		fseek(fp, -((calculdeju)*PAYLOADSIZE), SEEK_CUR);
+		seq_number = calculdeben;
+		}
+	}
+	
+}
 
 
 int sendMsg(int socket, char* buf, struct sockaddr* dest_addr, int dest_len, int type, int seq_number, int window){
-
+	
 	if(type == PTYPE_SYN){
 		memset(&(buf[0]), 0,BUFFSIZE);
 		buf[0] = PTYPE_SYN<<5; 
@@ -45,9 +66,14 @@ int sendMsg(int socket, char* buf, struct sockaddr* dest_addr, int dest_len, int
 		buf[0] = (PTYPE_ACK<<5);
 		return sendto(socket, buf,BUFFSIZE,0,(struct sockaddr *) dest_addr,dest_len);	
 	}else if(type == PTYPE_DATA){
-		printf("Len : %x %x \n", buf[LENGTHSTARTPOS],buf[LENGTHSTARTPOS+1]);
+				pthread_t thread;
+		last =&thread;
+		pthread_create(&thread,NULL, poll_timer,&seq_number);
 		return sendto(socket, buf,BUFFSIZE,0,(struct sockaddr *) dest_addr,dest_len);	
 	}else if(type == PTYPE_XOR){
+				pthread_t thread;
+		last =&thread;
+		pthread_create(&thread,NULL, poll_timer,&seq_number);
 		char buffer2[BUFFSIZE];
 		memset(&buffer2[0], 0 , BUFFSIZE);
 		buffer2[0] = (PTYPE_XOR<<5);
@@ -56,7 +82,6 @@ int sendMsg(int socket, char* buf, struct sockaddr* dest_addr, int dest_len, int
 		char right= PAYLOADSIZE % 256;
 		memcpy(&buffer2[LENGTHSTARTPOS], &left, 1);
 		memcpy(&buffer2[LENGTHSTARTPOS+1], &right, 1);
-		printf("Count XOR fread:%d %x %x\n", PAYLOADSIZE, buffer2[2], buffer2[3]);
 		memcpy(&(buffer2[4]), &buf[0], PAYLOADSIZE);
 		
 		/*
@@ -86,14 +111,17 @@ int readsync(int socket, struct sockaddr* dest_addr, int dest_len){
 }
 
 void computeXor(char* buf){
-		if(xor_count != xorfreq){
+	int j;
+	for (j =0; j<xorfreq; j++){
+		if(j!=0){
 			int i;
 			for(i=0; i<PAYLOADSIZE; i++){
-				xor_buffer[i] = xor_buffer[i] ^ buf[4+i];
+				xor_buffer[i] = xor_buffer[i] ^ buf[(j*BUFFSIZE)+4+i];
 			}
 		}else{
 			memcpy(&xor_buffer, &buf[4], PAYLOADSIZE);
 		}
+	}
 }
 
 int readType(char head){
@@ -112,9 +140,9 @@ int readSeqNumber(char s){
 }
 
 void* packet_send(void* data){
-	FILE *fp=NULL;
-
-	fp = fopen("./melissa.jpg","r");
+	
+	printf("fopen %s\n", file_path);
+	fp = fopen(file_path,"r");
 	//fp = NULL;
 	perror("fopen");
 	/*if(fp == NULL){
@@ -147,20 +175,21 @@ void* packet_send(void* data){
 	
 			
 			sem_wait(&sem);
-			window_end = (window_end + 1) % window_size;
+			window_end = (window_end + 1) % MAXWINDOWSIZE;
 			
 			if(sendMsg(sock, &buffer[buff_start],(struct sockaddr*) &sin6, sin6len, PTYPE_DATA, seq_number, window_end)==-1){
 					perror("connection lost");
 					exit(EXIT_FAILURE);
 			}
-			computeXor(&buffer[buff_start]);
+			
 			seq_number= (seq_number+1)%256;
 			if(byte_count < 512){ xor_count = 0; last_pack = 1;}
 			else xor_count--;
 		}else{
 			sem_wait(&sem);
-			window_end = (window_end + 1) % window_size;
+			window_end = (window_end + 1) % MAXWINDOWSIZE;
 			printf("send xor\n");
+			computeXor(buffer);
 			if(sendMsg(sock, xor_buffer,(struct sockaddr*) &sin6, sin6len, PTYPE_XOR, seq_number, window_end)==-1){
 					perror("connection lost");
 					exit(EXIT_FAILURE);
@@ -184,7 +213,9 @@ void* ack_receive(void* data){
 		if(readType(buf[0]== PTYPE_ACK)){
 			int seq = readSeqNumber(buf[1]);
 			if(seq==seq_number+1){
-					seq_number++;
+					window_start = (window_start + 1) % MAXWINDOWSIZE;
+					seq_number = (seq_number+1)%256;
+					acknoledged = (acknoledged+1)%256;
 			}
 		}
 		sem_post(&sem);
@@ -198,7 +229,6 @@ int saveFile(){
 	pthread_t packet_sender, ack_receiver;
 	
 	xor_count = xorfreq;
-	//window_size = 4;
 	
 	sem_init(&sem, 0, 4);
 	pthread_create(&packet_sender,NULL, packet_send, NULL);
@@ -215,11 +245,12 @@ int main(int argc, char *argv[])
 	struct addrinfo hints,*result;
 	char sync_buf[BUFFSIZE];
 
-	if (argc < 3) {
-		fprintf(stderr, "Usage: %s host port\n", argv[0]);
+	if (argc < 4) {
+		fprintf(stderr, "Usage: %s host port filename\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
-	
+	file_path = argv[3];
+	printf("file %s %s\n", file_path, argv[3]);
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_DGRAM;

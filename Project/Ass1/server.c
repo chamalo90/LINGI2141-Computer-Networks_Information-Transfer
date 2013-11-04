@@ -21,11 +21,12 @@ int seq_number = 0;
 int window_start = 0;
 int window_end = 0;
 int xor_count = XORFREQ;
-int window_size;
+
 char buffer[PAYLOADSIZE*XORFREQ];
 char xor_buffer[PAYLOADSIZE];
 int msg_rvcd = 0;
 int last_length = PAYLOADSIZE;
+char* file_path;
 FILE *fp;
 
 
@@ -102,16 +103,32 @@ int readAck(int sock){
 	}
 }
 
+//~ void computeXor(char* buf){
+		//~ 
+		//~ if(xor_count != XORFREQ){
+			//~ int i;
+			//~ for(i=0; i<PAYLOADSIZE; i++){
+				//~ xor_buffer[i] = xor_buffer[i]^buf[4+i];
+			//~ }
+		//~ }else{
+			//~ memcpy(&xor_buffer, &buf[4], PAYLOADSIZE);
+		//~ }
+//~ }
+
+
 void computeXor(char* buf){
-		
-		if(xor_count != XORFREQ){
+	int j;
+	for (j =0; j<XORFREQ; j++){
+		if(j!=0){
 			int i;
 			for(i=0; i<PAYLOADSIZE; i++){
-				xor_buffer[i] = xor_buffer[i]^buf[4+i];
+				xor_buffer[i] = xor_buffer[i] ^ buf[(j*PAYLOADSIZE)+i];
 			}
+			
 		}else{
-			memcpy(&xor_buffer, &buf[4], PAYLOADSIZE);
+			memcpy(&xor_buffer, buf, PAYLOADSIZE);
 		}
+	}
 }
 
 void writeBufferToFile(){
@@ -128,7 +145,6 @@ void writeBufferToFile(){
 int checkXor(char *buf){
 		int i;
 		for(i = 0; i< PAYLOADSIZE; i++){
-			
 			if(buf[4+i] != xor_buffer[i]){ return 0;}
 		}
 
@@ -140,17 +156,20 @@ int checkXor(char *buf){
 
 
 int receiveFile(int sock){
-	fp = fopen("./melissa2.jpg","w");
-	
+	fp = fopen(file_path,"w");
+	if(fp == NULL)
+	{
+			perror("open");
+			exit(EXIT_FAILURE);
+	}
 	while(1){
 		char buf[BUFFSIZE];
-		struct sockaddr_in6 sin6_tmp;
 		if(recvfrom(sock, &buf, BUFFSIZE, 0, (struct sockaddr*) &sin6_cli, &sin6len) == -1){
 				perror("Connection Lost");
 				exit(EXIT_FAILURE);
 		}
 		printf("received pack n° %d\n", seq_number);
-		window_start = (window_start+1)%window_size;
+		window_start = (window_start+1)%MAXWINDOWSIZE;
 		
 		int type = readType(buf[0]);
 		if(type == PTYPE_DATA){
@@ -159,11 +178,10 @@ int receiveFile(int sock){
 			if(seq == seq_number && xor_count !=0){
 				memcpy(&buffer[(XORFREQ-xor_count)*PAYLOADSIZE], &buf[4], PAYLOADSIZE);
 				msg_rvcd++;
-				computeXor(buf);
 				xor_count--;
 				
 				seq_number = (seq_number+1)%256;
-				window_end = (window_end+ 1)%window_size;
+				window_end = (window_end+ 1)%MAXWINDOWSIZE;
 				sendMsg(sock, PTYPE_ACK, seq_number, window_end);
 				last_length =readLength(buf);
 				if(last_length<512){
@@ -175,12 +193,13 @@ int receiveFile(int sock){
 			}
 			
 		}else if(type == PTYPE_XOR){
+			computeXor(buffer);
 			int seq = readSeqNumber(buf[1]);
 			if(seq == seq_number && xor_count == 0){
 					if(checkXor(buf)){
 							xor_count = XORFREQ;
 							seq_number= (seq_number+1)%256;
-							window_end = (window_end+ 1)%window_size;
+							window_end = (window_end+ 1)%MAXWINDOWSIZE;
 							sendMsg(sock, PTYPE_ACK, seq_number, window_end);
 							printf("Xor corr, nb: %d seq nb: %d\n",msg_rvcd, seq_number);
 							if(last_length<512){return 0;}
@@ -205,13 +224,12 @@ int receiveFile(int sock){
 int main(int argc, char**argv){
 	struct addrinfo hints, *result;
 	int sock;
-	window_size = XORFREQ + 1;
 
-	if (argc < 2) {
-		fprintf(stderr, "Usage: %s port\n", argv[0]);
+	if (argc < 3) {
+		fprintf(stderr, "Usage: %s port filename\n", argv[0]);
 		exit(EXIT_FAILURE);
 	}
-	
+	file_path =  argv[2];
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_DGRAM;
@@ -252,7 +270,6 @@ int main(int argc, char**argv){
 			perror("Acknoledgement reading");
 			exit(EXIT_FAILURE);
 	}
-	
 	if(receiveFile(sock)==-1){
 		perror("Error while receiving file");
 		exit(EXIT_FAILURE);	
