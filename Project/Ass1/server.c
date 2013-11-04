@@ -200,6 +200,7 @@ int receiveFile(int sock){
 							xor_count = XORFREQ;
 							seq_number= (seq_number+1)%256;
 							window_end = (window_end+ 1)%MAXWINDOWSIZE;
+							
 							sendMsg(sock, PTYPE_ACK, seq_number, window_end);
 							printf("Xor corr, nb: %d seq nb: %d\n",msg_rvcd, seq_number);
 							if(last_length<512){return 0;}

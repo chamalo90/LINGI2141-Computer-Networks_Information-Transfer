@@ -16,8 +16,7 @@
 #define LENGTHSTARTPOS 2
 
 struct pollData1{
-	int seq_number;
-	
+	int seq;
 };
 
 #endif 

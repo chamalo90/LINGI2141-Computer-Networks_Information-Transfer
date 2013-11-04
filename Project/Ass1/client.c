@@ -43,7 +43,7 @@ void* poll_timer(void* data){
 	fds.fd = sock;
 	fds.events = POLLIN;
 	if(poll(&fds,1,2000)==0){
-		printf("last %d %d", acknoledged, seq);
+		printf("FAIL %d %d %d", acknoledged, seq, seq_number);
 		if(acknoledged<seq){
 		int calculdeben = seq - ((seq-1)%(xorfreq+1));
 		long calculdeju = calculdeben - (calculdeben/(xorfreq+1)) -1;
