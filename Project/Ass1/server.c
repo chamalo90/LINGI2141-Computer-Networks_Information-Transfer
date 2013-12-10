@@ -11,6 +11,7 @@
 #include <string.h>
 #include <errno.h>
 #include <pthread.h>
+#include <time.h>
 #include "appconst.h"
 
 
@@ -56,7 +57,8 @@ int sendMsg(int socket, int type, int seq_number, int window){
 		memset(&(buf[1]), 0,BUFFSIZE - 1);
 		return sendto(socket, buf,BUFFSIZE,0,(struct sockaddr *) &sin6_cli, sin6len);	
 	}else if(type == PTYPE_ACK){
-		buf[0] = (PTYPE_ACK<<5);
+		buf[0] = (PTYPE_ACK<<5)|window;
+		buf[1]= seq_number;
 		return sendto(socket, buf,BUFFSIZE,0,(struct sockaddr *) &sin6_cli, sin6len);	
 	}
 	return -1;
@@ -83,7 +85,6 @@ int readLength(char* buf){
 	uint8_t left = (uint8_t) buf[LENGTHSTARTPOS];
 	uint8_t right = (uint8_t) buf[LENGTHSTARTPOS+1];
 	uint16_t len = left << 8 | right;
-	printf("Length : %x %x %u %u %d\n",buf[LENGTHSTARTPOS], buf[LENGTHSTARTPOS+1], left, right, len);
 	return len;
 }
 
@@ -103,17 +104,6 @@ int readAck(int sock){
 	}
 }
 
-//~ void computeXor(char* buf){
-		//~ 
-		//~ if(xor_count != XORFREQ){
-			//~ int i;
-			//~ for(i=0; i<PAYLOADSIZE; i++){
-				//~ xor_buffer[i] = xor_buffer[i]^buf[4+i];
-			//~ }
-		//~ }else{
-			//~ memcpy(&xor_buffer, &buf[4], PAYLOADSIZE);
-		//~ }
-//~ }
 
 
 void computeXor(char* buf){
@@ -162,19 +152,22 @@ int receiveFile(int sock){
 			perror("open");
 			exit(EXIT_FAILURE);
 	}
+	int test =4;
 	while(1){
 		char buf[BUFFSIZE];
+		test--;
 		if(recvfrom(sock, &buf, BUFFSIZE, 0, (struct sockaddr*) &sin6_cli, &sin6len) == -1){
 				perror("Connection Lost");
 				exit(EXIT_FAILURE);
 		}
-		printf("received pack n° %d\n", seq_number);
-		window_start = (window_start+1)%MAXWINDOWSIZE;
+		
 		
 		int type = readType(buf[0]);
-		if(type == PTYPE_DATA){
+		int seq = readSeqNumber(buf[1]);
+		printf("Received test:%d seq:%d\n", test, seq);
+		if(type == PTYPE_DATA && test !=0){
+			window_start = (window_start+1)%MAXWINDOWSIZE;
 			
-			int seq = readSeqNumber(buf[1]);
 			if(seq == seq_number && xor_count !=0){
 				memcpy(&buffer[(XORFREQ-xor_count)*PAYLOADSIZE], &buf[4], PAYLOADSIZE);
 				msg_rvcd++;
@@ -183,6 +176,7 @@ int receiveFile(int sock){
 				seq_number = (seq_number+1)%256;
 				window_end = (window_end+ 1)%MAXWINDOWSIZE;
 				sendMsg(sock, PTYPE_ACK, seq_number, window_end);
+				printf("Ack sent %d %d\n", seq_number, window_end);
 				last_length =readLength(buf);
 				if(last_length<512){
 						xor_count=0;
@@ -202,18 +196,20 @@ int receiveFile(int sock){
 							window_end = (window_end+ 1)%MAXWINDOWSIZE;
 							
 							sendMsg(sock, PTYPE_ACK, seq_number, window_end);
-							printf("Xor corr, nb: %d seq nb: %d\n",msg_rvcd, seq_number);
+							
 							if(last_length<512){return 0;}
 							msg_rvcd=0;
 							
 					}else{
 							// Make choice if XOR is wrong
-							xor_count = XORFREQ;
-							seq_number= (seq_number+1)%256;
-							/* SEND SPECIAL ACK.*/
+
+							/* No ack sent, all window will be retransmitted*/
 					}
 			}
 				
+		}
+		if(test ==0){
+			test = 1000;	
 		}
 	}
 	fclose(fp);

@@ -1,0 +1,36 @@
+./server 32000 ./testudpclient2.c
+Received test:3 seq:1
+Seqs buf: 1 seq_n:1
+Ack sent 2 1
+Received test:2 seq:2
+Seqs buf: 2 seq_n:2
+Ack sent 3 2
+Received test:1 seq:3
+Seqs buf: 3 seq_n:3
+Ack sent 4 3
+Received test:0 seq:4
+Seqs buf: 4 seq_n:4
+Received test:999 seq:8
+Seqs buf: 8 seq_n:5
+Ack sent 5 4
+Received test:998 seq:9
+Seqs buf: 9 seq_n:5
+Ack sent 5 4
+Received test:997 seq:10
+Seqs buf: 10 seq_n:5
+Ack sent 5 4
+Received test:996 seq:6
+Seqs buf: 6 seq_n:5
+Ack sent 5 4
+Received test:995 seq:7
+Seqs buf: 7 seq_n:5
+Ack sent 5 4
+Received test:994 seq:6
+Seqs buf: 6 seq_n:5
+Ack sent 5 4
+Received test:993 seq:5
+Seqs buf: 5 seq_n:5
+Ack sent 6 5
+Received test:992 seq:6
+Seqs buf: 6 seq_n:6
+Ack XOR sent 7 6

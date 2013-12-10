@@ -20,15 +20,17 @@ struct sockaddr_in6 sin6_serv;
 int sin6len = sizeof(struct sockaddr_in6);
 int seq_number = 0;
 int window_start = 1;
-int window_end = 1;
+int window_end = 2;
 int xor_count;
 int xorfreq;
-
+int retransmission = 0;
 char *buffer;
 char xor_buffer[PAYLOADSIZE];
 int sock;
 sem_t sem;
+sem_t sem2;
 int finished=0;
+int sender_finished = 0;
 int last_pack=0;
 pthread_t *last;
 int acknoledged = 0;
@@ -42,15 +44,31 @@ void* poll_timer(void* data){
 	struct pollfd fds;
 	fds.fd = sock;
 	fds.events = POLLIN;
-	if(poll(&fds,1,2000)==0){
-		printf("FAIL %d %d %d", acknoledged, seq, seq_number);
-		if(acknoledged<seq){
+	int c = poll(&fds,1,10);
+	//printf("Start time %d %d %d %d\n", acknoledged, seq, seq_number, c);
+	
+	if(c==0){
+		//printf("FAIL %d %d %d\n", acknoledged, seq, seq_number);
+	/*	if(acknoledged<seq){
 		int calculdeben = seq - ((seq-1)%(xorfreq+1));
 		long calculdeju = calculdeben - (calculdeben/(xorfreq+1)) -1;
 		fseek(fp, -((calculdeju)*PAYLOADSIZE), SEEK_CUR);
 		seq_number = calculdeben;
-		}
+		}*/
 	}
+	
+}
+
+int retransmit(int seq){
+	printf("Retransmit seq:%d \n",seq);
+	sem_wait(&sem2);
+	int calculdeben = seq - ((seq-1)%(xorfreq+1));
+	long calculdeju = calculdeben - (calculdeben/(xorfreq+1)) -1;
+	fseek(fp, -((calculdeju)*PAYLOADSIZE), SEEK_CUR);
+	seq_number = calculdeben;
+	retransmission = seq;
+	xor_count= xorfreq;
+	sem_post(&sem2);
 	
 }
 
@@ -66,12 +84,13 @@ int sendMsg(int socket, char* buf, struct sockaddr* dest_addr, int dest_len, int
 		buf[0] = (PTYPE_ACK<<5);
 		return sendto(socket, buf,BUFFSIZE,0,(struct sockaddr *) dest_addr,dest_len);	
 	}else if(type == PTYPE_DATA){
-				pthread_t thread;
+		pthread_t thread;
 		last =&thread;
 		pthread_create(&thread,NULL, poll_timer,&seq_number);
+		buf[1] = seq_number;
 		return sendto(socket, buf,BUFFSIZE,0,(struct sockaddr *) dest_addr,dest_len);	
 	}else if(type == PTYPE_XOR){
-				pthread_t thread;
+		pthread_t thread;
 		last =&thread;
 		pthread_create(&thread,NULL, poll_timer,&seq_number);
 		char buffer2[BUFFSIZE];
@@ -83,11 +102,6 @@ int sendMsg(int socket, char* buf, struct sockaddr* dest_addr, int dest_len, int
 		memcpy(&buffer2[LENGTHSTARTPOS], &left, 1);
 		memcpy(&buffer2[LENGTHSTARTPOS+1], &right, 1);
 		memcpy(&(buffer2[4]), &buf[0], PAYLOADSIZE);
-		
-		/*
-		printf("Seq %x\n", buffer[1]);
-		printf("Length %x%x\n", buffer[2], buffer[3]);
-		printf("Payload %x \n %x \n", buffer[4], xor_buffer[0]);*/
 		
 		return sendto(socket, buffer2,BUFFSIZE,0,(struct sockaddr *) dest_addr,dest_len);	
 		
@@ -108,6 +122,21 @@ int readsync(int socket, struct sockaddr* dest_addr, int dest_len){
 		}
 	}
 	
+}
+
+int readAck(int sock){
+	char buf[BUFFSIZE];
+	int d = recvfrom(sock, &buf, BUFFSIZE, 0, NULL, &sin6len);
+	if(d== -1){
+		perror("Recv failed");
+		return -1;
+	}else{
+		if(buf[0] == (PTYPE_ACK<<5)){
+			return 0;
+		}else{
+			return -1;
+		}
+	}
 }
 
 void computeXor(char* buf){
@@ -135,23 +164,21 @@ int readWindow(char head){
 }
 
 int readSeqNumber(char s){
-	return s % 256;
+	return ((int8_t)s);
 		
 }
 
 void* packet_send(void* data){
 	
-	printf("fopen %s\n", file_path);
 	fp = fopen(file_path,"r");
-	//fp = NULL;
-	perror("fopen");
-	/*if(fp == NULL){
+	if(fp == NULL){
 		perror("File could not be opened");
 		exit(EXIT_FAILURE);
-	}*/
+	}
 
-	while(1){
-		printf("sending pack n° %d\n", seq_number);
+	while(!sender_finished){
+		if(retransmission==seq_number) retransmission=0;
+		sem_post(&sem2);
 		if(xor_count!=0){
 			
 			int buff_start = (xorfreq-xor_count)*BUFFSIZE;
@@ -169,35 +196,37 @@ void* packet_send(void* data){
 			}
 			memcpy(&buffer[buff_start+2], &left, 1);
 			memcpy(&buffer[buff_start+3], &right, 1);
-			printf("Count fread:%d %x %x\n", byte_count, buffer[buff_start+2], buffer[buff_start+3]);
 			uint16_t test =  buffer[buff_start+2]<<8 | (u_int8_t) buffer[buff_start+3];
-			printf("buf length : %u\n",test);
 	
 			
 			sem_wait(&sem);
-			window_end = (window_end + 1) % MAXWINDOWSIZE;
+			sem_wait(&sem2);
 			
+			printf("Send seq: %d win: %d\n", seq_number, window_end);
 			if(sendMsg(sock, &buffer[buff_start],(struct sockaddr*) &sin6, sin6len, PTYPE_DATA, seq_number, window_end)==-1){
 					perror("connection lost");
 					exit(EXIT_FAILURE);
 			}
 			
 			seq_number= (seq_number+1)%256;
+			window_end = (window_end + 1) % MAXWINDOWSIZE;
 			if(byte_count < 512){ xor_count = 0; last_pack = 1;}
 			else xor_count--;
 		}else{
 			sem_wait(&sem);
+			sem_wait(&sem2);
 			window_end = (window_end + 1) % MAXWINDOWSIZE;
-			printf("send xor\n");
 			computeXor(buffer);
+			printf("Send xor: %d win: %d\n", seq_number, window_end);
 			if(sendMsg(sock, xor_buffer,(struct sockaddr*) &sin6, sin6len, PTYPE_XOR, seq_number, window_end)==-1){
 					perror("connection lost");
 					exit(EXIT_FAILURE);
 			}
 			seq_number= (seq_number+1)%256;
-			if(last_pack){ return 0;}
+			
 			xor_count= xorfreq;
 		}
+		
 	}
 }
 
@@ -210,13 +239,21 @@ void* ack_receive(void* data){
 					perror("connection lost");
 					exit(EXIT_FAILURE);
 		}
-		if(readType(buf[0]== PTYPE_ACK)){
+		if(readType(buf[0])== PTYPE_ACK){
+	
 			int seq = readSeqNumber(buf[1]);
-			if(seq==seq_number+1){
-					window_start = (window_start + 1) % MAXWINDOWSIZE;
-					seq_number = (seq_number+1)%256;
-					acknoledged = (acknoledged+1)%256;
+			acknoledged=(acknoledged+1)%256;
+			printf("Received Ack seq:%d ack:%d\n",seq, acknoledged);
+			if(retransmission==seq){
+			}else{
+				if(seq<=acknoledged){
+						acknoledged = seq-2;
+						retransmit(seq);
+				}
 			}
+			if(last_pack && seq > seq_number){ sender_finished=1;}
+				
+			
 		}
 		sem_post(&sem);
 	}
@@ -231,6 +268,7 @@ int saveFile(){
 	xor_count = xorfreq;
 	
 	sem_init(&sem, 0, 4);
+	sem_init(&sem2,0,1);
 	pthread_create(&packet_sender,NULL, packet_send, NULL);
 	pthread_create(&ack_receiver,NULL, ack_receive, NULL);
 	pthread_join(packet_sender, NULL);
@@ -250,7 +288,7 @@ int main(int argc, char *argv[])
 		exit(EXIT_FAILURE);
 	}
 	file_path = argv[3];
-	printf("file %s %s\n", file_path, argv[3]);
+	
 	memset(&hints, 0, sizeof(struct addrinfo));
 	hints.ai_family = AF_INET6;
 	hints.ai_socktype = SOCK_DGRAM;
@@ -268,16 +306,8 @@ int main(int argc, char *argv[])
 			exit(EXIT_FAILURE);
 	}
 	
-	
-	/* Test Connection */
-	//~ sendto(sock, "coucou",6,0,(struct sockaddr*) result->ai_addr, result->ai_addrlen);
-	//~ char buf[6];
-	//~ printf("fini");
-	//~ fflush(stdout);
-	//~ recvfrom(sock, &buf, 6, 0, (struct sockaddr*) &sin6, &sin6len);
-	//~ printf("fini : %s\n", buf);
 	sin6 =*result->ai_addr;
-	if(sendMsg(sock, sync_buf,(struct sockaddr*) &sin6, sin6len , PTYPE_SYN, 0, 0) ==-1){
+	if(sendMsg(sock, sync_buf,(struct sockaddr*) &sin6, sin6len , PTYPE_SYN, seq_number, 0) ==-1){
 		perror("Sync error on first send");
 		exit(EXIT_FAILURE);
 	}
@@ -287,10 +317,16 @@ int main(int argc, char *argv[])
 		perror("Xor freq reception");
 		exit(EXIT_FAILURE);	
 	}
-	if(sendMsg(sock, sync_buf,(struct sockaddr*) &sin6, sin6len , PTYPE_ACK, 0, 0) ==-1){
+	if(sendMsg(sock, sync_buf,(struct sockaddr*) &sin6, sin6len , PTYPE_ACK, seq_number, 0) ==-1){
 		perror("Sync error on syn ack");
 		exit(EXIT_FAILURE);
 	}
+	
+	if(readAck(sock) == -1) {
+		perror("Ack sync recept* reception");
+		exit(EXIT_FAILURE);	
+	}
+	
 	
 	seq_number =1;
 	

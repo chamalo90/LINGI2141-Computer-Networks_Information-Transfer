@@ -1,0 +1,23 @@
+Projet 1 - Group 6
+Authors : Julien Colmonts - Benoit Baufays
+Use :
+- makefile:
+	* clean : remove compiled server.c, client.c & copied image (network2.jpg)
+	* client : compile client.c
+	* server : compile server.c
+	* tserver : launch a sample server waiting on port 32000 - file created will be network2.jpg
+	* tclient : launch a sample client trying to reach server on localhost (::1) on port 32000.
+				File transmitted will be network.jpg.
+- Using program:
+	* server : compile server.c with makefile then you can execute it with 
+							./server <port> <transmitted_filename>
+	* client : compile client.c with makefile then you can execute it with
+							./client <host (ipv6)> <port> <file_to_transmit>
+	Care to use file name with './' as we did in makefile.
+
+- Problems:
+	* The program can't handle errors during transmission
+	
+Respectfully,
+
+Group6.

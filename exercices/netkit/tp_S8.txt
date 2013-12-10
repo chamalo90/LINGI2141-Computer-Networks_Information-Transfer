@@ -1,0 +1,5 @@
+lstart -f -d *lab dir*
+
+iperf -s // coté serveur
+iperf -c <host> --set-mss #KMG --window #KMG // coté client
+

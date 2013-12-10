@@ -10,7 +10,7 @@
 #define PTYPE_XOR (0x04)
 
 #define BUFFSIZE 516
-#define XORFREQ 2
+#define XORFREQ 3
 #define PAYLOADSIZE 512
 #define MAXWINDOWSIZE 32
 #define LENGTHSTARTPOS 2
