@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2013.4.30)  15 DEC 2013 15:07
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2013.4.30)  15 DEC 2013 15:44
 entering extended mode
  %&-line parsing enabled.
 **article_2.tex
@@ -996,15 +996,40 @@ Underfull \hbox (badness 10000) in paragraph at lines 127--130
 File: pictures/update_get_1.png Graphic file (type png)
 
 <use pictures/update_get_1.png>
-Underfull \hbox (badness 10000) in paragraph at lines 131--132
+<pictures/update_first_file.png, id=44, 768.8725pt x 317.185pt>
+File: pictures/update_first_file.png Graphic file (type png)
+
+<use pictures/update_first_file.png>
+Underfull \hbox (badness 10000) in paragraph at lines 131--137
 
  []
 
 
-LaTeX Warning: Empty bibliography on input line 144.
+Underfull \hbox (badness 10000) in paragraph at lines 131--137
+[]
+ []
+
+
+Overfull \hbox (55.59242pt too wide) in paragraph at lines 131--137
+\T1/pplx/m/n/10 (-20) "http://extras.ubuntu.com/ubuntu/dists/precise/Release".
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 131--137
+
+ []
+
+
+Overfull \hbox (25.66122pt too wide) in paragraph at lines 131--137
+[]
+ []
 
 [2 <./pictures/DNS_info.png (PNG copy)> <./pictures/dns_update.png (PNG copy)> 
-<./pictures/update_get_1.png (PNG copy)>] (./article_2.aux)
+<./pictures/update_get_1.png (PNG copy)>]
+
+LaTeX Warning: Empty bibliography on input line 149.
+
+[3 <./pictures/update_first_file.png (PNG copy)>] (./article_2.aux)
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
@@ -1013,11 +1038,11 @@ Package logreq Info: Writing requests to 'article_2.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 14073 strings out of 495028
- 219437 string characters out of 1181229
- 429488 words of memory out of 3000000
- 16881 multiletter control sequences out of 15000+50000
- 54333 words of font info for 173 fonts, out of 3000000 for 9000
+ 14095 strings out of 495028
+ 219739 string characters out of 1181229
+ 431488 words of memory out of 3000000
+ 16885 multiletter control sequences out of 15000+50000
+ 55225 words of font info for 185 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
  38i,10n,43p,820b,620s stack positions out of 5000i,500n,10000p,200000b,50000s
 {/usr/share/texmf-texlive/fonts/enc/dvips/base/8r.enc}</usr/share/texmf-texli
@@ -1025,9 +1050,9 @@ ve/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-texlive/fonts/ty
 pe1/public/fpl/fplrc8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/palatino/u
 plb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/palatino/uplr8a.pfb></usr/s
 hare/texmf-texlive/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on article_2.pdf (2 pages, 253387 bytes).
+Output written on article_2.pdf (3 pages, 320710 bytes).
 PDF statistics:
- 70 PDF objects out of 1000 (max. 8388607)
- 10 named destinations out of 1000 (max. 500000)
- 46664 words of extra memory for PDF output out of 51595 (max. 10000000)
+ 75 PDF objects out of 1000 (max. 8388607)
+ 11 named destinations out of 1000 (max. 500000)
+ 46669 words of extra memory for PDF output out of 51595 (max. 10000000)
 
