@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2013.4.30)  15 DEC 2013 15:44
+This is pdfTeX, Version 3.1415926-1.40.10 (TeX Live 2009/Debian) (format=pdflatex 2013.4.30)  15 DEC 2013 21:42
 entering extended mode
  %&-line parsing enabled.
 **article_2.tex
@@ -963,7 +963,7 @@ LaTeX Font Warning: Font shape `OMS/pplx/m/n' undefined
 (Font)              using `OMS/cmsy/m/n' instead
 (Font)              for symbol `textbullet' on input line 107.
 
-<pictures/DNS_info.png, id=31, 674.52pt x 200.75pt>
+<pictures/DNS_info.png, id=51, 674.52pt x 200.75pt>
 File: pictures/DNS_info.png Graphic file (type png)
 
 <use pictures/DNS_info.png>
@@ -974,7 +974,7 @@ Underfull \hbox (badness 10000) in paragraph at lines 115--117
 [1{/var/lib/texmf/fonts/map/pdftex/updmap/pdftex.map}
 
 ]
-<pictures/dns_update.png, id=42, 697.60625pt x 282.05376pt>
+<pictures/dns_update.png, id=62, 697.60625pt x 282.05376pt>
 File: pictures/dns_update.png Graphic file (type png)
 
 <use pictures/dns_update.png>
@@ -992,11 +992,11 @@ Underfull \hbox (badness 10000) in paragraph at lines 127--130
 
  []
 
-<pictures/update_get_1.png, id=43, 1018.80624pt x 359.3425pt>
+<pictures/update_get_1.png, id=63, 1018.80624pt x 359.3425pt>
 File: pictures/update_get_1.png Graphic file (type png)
 
 <use pictures/update_get_1.png>
-<pictures/update_first_file.png, id=44, 768.8725pt x 317.185pt>
+<pictures/update_first_file.png, id=64, 768.8725pt x 317.185pt>
 File: pictures/update_first_file.png Graphic file (type png)
 
 <use pictures/update_first_file.png>
@@ -1024,12 +1024,58 @@ Overfull \hbox (25.66122pt too wide) in paragraph at lines 131--137
 []
  []
 
+
+Underfull \hbox (badness 10000) in paragraph at lines 131--137
+
+ []
+
 [2 <./pictures/DNS_info.png (PNG copy)> <./pictures/dns_update.png (PNG copy)> 
 <./pictures/update_get_1.png (PNG copy)>]
+Underfull \hbox (badness 10000) in paragraph at lines 141--144
 
-LaTeX Warning: Empty bibliography on input line 149.
+ []
 
-[3 <./pictures/update_first_file.png (PNG copy)>] (./article_2.aux)
+<pictures/install_dns.png, id=69, 577.15625pt x 141.52875pt>
+File: pictures/install_dns.png Graphic file (type png)
+
+<use pictures/install_dns.png>
+Overfull \hbox (25.8561pt too wide) in paragraph at lines 145--148
+[]
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 145--148
+
+ []
+
+[3 <./pictures/update_first_file.png (PNG copy)> <./pictures/install_dns.png (P
+NG copy)>] <pictures/install_download.png, id=74, 824.07875pt x 140.525pt>
+File: pictures/install_download.png Graphic file (type png)
+
+<use pictures/install_download.png>
+Underfull \hbox (badness 10000) in paragraph at lines 149--154
+
+ []
+
+
+Overfull \hbox (17.50192pt too wide) in paragraph at lines 149--154
+[]
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 149--154
+
+ []
+
+
+Underfull \hbox (badness 10000) in paragraph at lines 155--157
+
+ []
+
+
+LaTeX Warning: Empty bibliography on input line 170.
+
+[4 <./pictures/install_download.png (PNG copy)>] (./article_2.aux)
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
@@ -1038,11 +1084,11 @@ Package logreq Info: Writing requests to 'article_2.run.xml'.
 
  ) 
 Here is how much of TeX's memory you used:
- 14095 strings out of 495028
- 219739 string characters out of 1181229
+ 14154 strings out of 495028
+ 220531 string characters out of 1181229
  431488 words of memory out of 3000000
- 16885 multiletter control sequences out of 15000+50000
- 55225 words of font info for 185 fonts, out of 3000000 for 9000
+ 16900 multiletter control sequences out of 15000+50000
+ 57232 words of font info for 212 fonts, out of 3000000 for 9000
  28 hyphenation exceptions out of 8191
  38i,10n,43p,820b,620s stack positions out of 5000i,500n,10000p,200000b,50000s
 {/usr/share/texmf-texlive/fonts/enc/dvips/base/8r.enc}</usr/share/texmf-texli
@@ -1050,9 +1096,9 @@ ve/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr/share/texmf-texlive/fonts/ty
 pe1/public/fpl/fplrc8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/palatino/u
 plb8a.pfb></usr/share/texmf-texlive/fonts/type1/urw/palatino/uplr8a.pfb></usr/s
 hare/texmf-texlive/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on article_2.pdf (3 pages, 320710 bytes).
+Output written on article_2.pdf (4 pages, 389352 bytes).
 PDF statistics:
- 75 PDF objects out of 1000 (max. 8388607)
- 11 named destinations out of 1000 (max. 500000)
- 46669 words of extra memory for PDF output out of 51595 (max. 10000000)
+ 102 PDF objects out of 1000 (max. 8388607)
+ 17 named destinations out of 1000 (max. 500000)
+ 46719 words of extra memory for PDF output out of 51595 (max. 10000000)
 
