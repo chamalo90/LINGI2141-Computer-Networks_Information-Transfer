@@ -1,0 +1,7 @@
+\BOOKMARK [1][-]{section.1}{Introduction}{}
+\BOOKMARK [1][-]{section.2}{Apt-get}{}
+\BOOKMARK [1][-]{section.3}{Apt-get and IPv6}{}
+\BOOKMARK [1][-]{section.4}{Apt-get analysis}{}
+\BOOKMARK [2][-]{subsection.4.1}{Update}{section.4}
+\BOOKMARK [3][-]{subsubsection.4.1.1}{DNS Request}{subsection.4.1}
+\BOOKMARK [3][-]{subsubsection.4.1.2}{Getting information}{subsection.4.1}
