@@ -20,7 +20,8 @@
 
 \documentclass[journal]{IEEEtran}
 
-
+\usepackage{biblatex}
+\bibliography{project.bib}
 
 \usepackage[sc]{mathpazo} % Use the Palatino font
 \usepackage[T1]{fontenc} % Use 8-bit encoding that has 256 glyphs
@@ -59,19 +60,17 @@
 %	TITLE SECTION
 %----------------------------------------------------------------------------------------
 
-\title{\fontsize{24pt}{10pt}\selectfont\textbf{LINGI2141 - Individual Project \\Analysis of JDownloader}} % Article title
+\title{\vspace{-15mm}\fontsize{24pt}{10pt}\selectfont\textbf{LINGI2141 - Individual Project \\Analysis of JDownloader}} % Article title
 
 \author{
 \large
 \textsc{Julien Colmonts}\\[2mm] % Your name
 \normalsize Université Catholique de Louvain \\ % Your institution
+\vspace{-5mm}
 }
 \date{}
 
 %----------------------------------------------------------------------------------------
-
-\usepackage{biblatex}
-\bibliography{project}
 
 \begin{document}
 
@@ -85,7 +84,7 @@
 
 \begin{abstract}
 
-This paper will deal with analysing the networked application JDownloader \ref{JDlr} which is a download manager for a large number of hosting sites. That kind of download manager helps people to download a large number of files from all categories. JDownloader is a cross-platform program written in the Java programming language. It supports about 110 one-click hosting sites, is able to solve some CAPTCHAs, can deal with several parallel downloads and multiple connections. It is also free and open-source.
+This paper will deal with analysing the networked application JDownloader which is a download manager for a large number of hosting sites.
 
 \end{abstract}
 
@@ -96,22 +95,19 @@ This paper will deal with analysing the networked application JDownloader \ref{J
 
 \section{Introduction}
 
-\lettrine[nindent=0em,lines=3]{F}or a few years, a very large number of hosting sites has emerged. Most of them are used to exchange illegal content like movies, games, etc. Links to access this content will then be shared on different websites. With JDownloader, users aren't obliged to open these links one by one, wait the required time to be allowed to download for free and maybe fill a CAPTCHA. They can add all their links into the application and it will perform a major part of these actions by itself. As a concrete example of JDownloader use, a user just has to start the application and copy the link to the file (on the hosting site) he wants to download in his clipboard. JDownloader will automatically search if the link is valid It means that the link still exists and the file hasn't been deleted by the host (often for copyright infringement). Then, the user just has to start the download operation by clicking the play button and fill the CAPTCHA if the application can't solve it. The application is able to parse a long html code and to find all links contained in that code. The objective of analysing such an application obviously isn't to promote piracy on the internet. The idea is to understand how this download managers work. If hosts could detect they are accessed by one, they could improve their security policies. Preventing access to illegal content is a good way to fight piracy on the internet. 
-
-%------------------------------------------------
-
-\section{JDownloader and IPv6}
- JDownloader is still implemented to support only \textsc{IPv4} but developers are thinking to develop \textsc{IPv6} support throughout \ref{IPv6}. Project manager says that switching from one addressing method to another shouldn't be too hard because it affects only the implementation of low level layer of the application. Since it works as a web browser to reach websites, only the way of opening connections has to be modified. The main problem stands in the fact that it handles a large numbers of websites and these don't support \textsc{IPv6} yet. 
+\lettrine[nindent=0em,lines=3]{J} Downloader is a cross-platform download manager written in the Java programming language. It supports about 110 one-click hosting sites, is able to solve some CAPTCHAs, can deal with several parallel downloads and multiple connections. JDownloader is also free and open-source. It is still implemented to support only IPv4 but developers are thinking to develop IPv6 support throughout\footnote{\url{http://svn.jdownloader.org/issues/4150}}. As a concrete example of JDownloader use, a user just has to start the application and copy the link he want to download from in his clipboard. JDownloader will automatically search if the link is valid. If it is, the user just has to start the download operation and fill the CAPTCHA if the application can't solve it. 
 
 %------------------------------------------------
 
 \section{Adding a link}
-As said before, the application is able to monitor your clipboard. If a user copies an url, it will automatically check if it can download files from this address. To perform this operation, the application works as a web browser. It first needs the \textsc{IP} address of the domain written in the url so it will perform two queries to the DNS. The first one asks for \textsc{IPv4} when the second one asks for \textsc{IPv6} addresses.  After a three-way handshake, it will send a \textsc{GET} request in \textsc{HTTP 1.1} protocol. Since \textsc{IPv6} isn't implemented yet, it will use the first \textsc{IPv4} address which is returned by the DNS queries. Then, the page content is downloaded. In this case, the bit-rate can't be restricted. Finally, the application will send a \textsc{OK HTTP 1.1} standard message to tell the server that everything worked fine. 
+
 %------------------------------------------------
 
-\section{Download a link}
+\section{Download a link with no protection}
 
+%------------------------------------------------
 
+\section{Download a link with protection}
 
 %------------------------------------------------
 
@@ -120,7 +116,6 @@ As said before, the application is able to monitor your clipboard. If a user cop
 %----------------------------------------------------------------------------------------
 %	REFERENCE LIST
 %----------------------------------------------------------------------------------------
-
 
 \printbibliography
 
