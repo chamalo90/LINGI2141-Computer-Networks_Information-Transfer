@@ -27,7 +27,7 @@
 \usepackage[utf8]{inputenc}
 \linespread{1.05} % Line spacing - Palatino needs more space between lines
 \usepackage{microtype} % Slightly tweak font spacing for aesthetics
-
+\usepackage{graphicx}
 \usepackage[hmarginratio=1:1,top=32mm,columnsep=20pt]{geometry} % Document margins
 \usepackage{multicol} % Used for the two-column layout of the document
 \usepackage[hang, small,labelfont=bf,up,textfont=it,up]{caption} % Custom captions under/above floats in tables or figures
@@ -106,10 +106,33 @@ This paper will deal with analysing the networked application JDownloader \ref{J
 %------------------------------------------------
 
 \section{Adding a link}
-As said before, the application is able to monitor your clipboard. If a user copies an url, it will automatically check if it can download files from this address. To perform this operation, the application works as a web browser. It first needs the \textsc{IP} address of the domain written in the url so it will perform two queries to the DNS. The first one asks for \textsc{IPv4} when the second one asks for \textsc{IPv6} addresses.  After a three-way handshake, it will send a \textsc{GET} request in \textsc{HTTP 1.1} protocol. Since \textsc{IPv6} isn't implemented yet, it will use the first \textsc{IPv4} address which is returned by the DNS queries. Then, the page content is downloaded. In this case, the bit-rate can't be restricted. Finally, the application will send a \textsc{OK HTTP 1.1} standard message to tell the server that everything worked fine. 
+As said before, the application is able to monitor your clipboard. If a user copies an url, it will automatically check if it can download files from this address. To perform this operation, the application works as a web browser. It first needs the \textsc{IP} address of the domain written in the url so it will perform two queries to the DNS. The first one asks for \textsc{IPv4} when the second one asks for \textsc{IPv6} addresses.  \\
+\begin{figure}
+\includegraphics[scale=0.4]{dns.png}
+\end{figure}
+
+In the trace shown by Wireshark, we can see that the url \url{www21.uptobox.com} has an \textsc{IPv4} address which is $188.165.13.128$ but no \textsc{IPv6} address. 
+After a three-way handshake, it will send a \textsc{GET} request in \textsc{HTTP 1.1} protocol. Since \textsc{IPv6} isn't implemented yet, it will use the first \textsc{IPv4} address which is returned by the DNS queries. Then, the page content is downloaded. In this case, the bit-rate can't be restricted. Finally, the application will send a \textsc{OK HTTP 1.1} standard message to tell the server that everything worked fine and close the connection. On the screen, the user will just see that the application is searching for a file to download. If it finds something, it displays a list of what it found. \\
+If we analyse the packet that are exchange, we can observe the content of the webpage.\\
+\begin{figure}[ht]
+
+\includegraphics[scale=0.36]{htmlcode.png}
+\end{figure}
+In this figure, we can see the html code which is sent by the server.
+
 %------------------------------------------------
 
 \section{Download a link}
+The main functionality of JDownloader is its ability to download files from hosting sites. When a user will add in a link as told before, the application will download the page again. During the previous operation, it only checked that files where available on the link the user gave. In this operations, the Java client has to find the address of the file to download. Parsers are implemented in the JDownloader sources to search after this address for a large number of hosts. To understand how these exchanges work, we tried to download a random dll file on a host which is called \textsc{UpToBox}. We used this host because \textsc{JDownloader} is able to avoid free accounts waiting time and to solve CAPTCHA sequences. After the page analysis, another connection is opened. \\
+\begin{figure}[ht]
+\includegraphics[scale=0.3]{dlLink.png}\\
+\end{figure}
+\begin{itemize}
+\item The port used is an alternative to internet HTTP traffic , it's $8080$ instead of the usual $80$. 
+\item The windows are significantly larger than for the first page download. The among of data which will be transmitted seems to be a relevant variable to explain this sizes. 
+\item The url that is contacted contains a dynamic generated link created by the host. 
+\end{itemize}
+Then the download starts. 
 
 
 
